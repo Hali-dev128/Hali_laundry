@@ -1,3 +1,5 @@
 # allow crawling everything by default
 User-agent: *
-Disallow:
+Allow: /
+
+Sitemap: https://hali-laundry-b4zc.vercel.app/sitemap.xml

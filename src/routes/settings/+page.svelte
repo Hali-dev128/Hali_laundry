@@ -66,6 +66,11 @@
   const formatNaira = (amt) => `₦${(amt || 0).toLocaleString()}`;
 </script>
 
+<svelte:head>
+  <title>Admin Settings — Hali Laundry</title>
+  <meta name="robots" content="noindex, nofollow" />
+</svelte:head>
+
 <div class="max-w-7xl mx-auto space-y-5 pb-16">
 
   {#if laundryStore.role !== 'admin'}

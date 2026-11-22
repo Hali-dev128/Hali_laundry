@@ -1,5 +1,7 @@
 import { browser } from '$app/environment';
 
+const REMEMBER_KEY = 'hali_laundry_remembered_v1';
+
 const INITIAL_PRICES = [
   { id: 'p1', name: 'Agbada (Complete)', category: 'Traditional', price: 2500 },
   { id: 'p2', name: 'Senator / Native Wear', category: 'Traditional', price: 1500 },
@@ -160,6 +162,29 @@ class LaundryStore {
   toggleRole() {
     this.role = this.role === 'worker' ? 'admin' : 'worker';
     this.saveSession();
+  }
+
+  getRemembered() {
+    if (typeof window === 'undefined') return null;
+    try {
+      const raw = window.localStorage.getItem(REMEMBER_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  setRemembered(payload) {
+    if (typeof window === 'undefined') return;
+    try {
+      if (!payload) {
+        window.localStorage.removeItem(REMEMBER_KEY);
+        return;
+      }
+      window.localStorage.setItem(REMEMBER_KEY, JSON.stringify(payload));
+    } catch {
+      // Ignore storage quota or private-mode errors
+    }
   }
 
   setStoreId(newStoreId) {

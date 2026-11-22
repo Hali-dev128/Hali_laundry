@@ -21,6 +21,11 @@
   const formatNaira = (amt) => `₦${(amt || 0).toLocaleString()}`;
 </script>
 
+<svelte:head>
+  <title>Shop Overview — Hali Laundry</title>
+  <meta name="robots" content="noindex, nofollow" />
+</svelte:head>
+
 <div class="space-y-6 pb-12">
   
   <!-- Top Welcome Banner -->

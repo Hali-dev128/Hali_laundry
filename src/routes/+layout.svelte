@@ -16,6 +16,21 @@
   });
 </script>
 
+<svelte:head>
+  <meta
+    name="description"
+    content="Multi-tenant laundry order intake, workflow tracking, and digital receipt prototype built with SvelteKit and Tailwind CSS."
+  />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Hali Laundry" />
+  <meta property="og:title" content="Hali Laundry — Order & Workflow Management Prototype" />
+  <meta
+    property="og:description"
+    content="Explore laundry order tracking, admin/worker demo roles, and digital receipts across mobile and desktop."
+  />
+  <link rel="canonical" href={page.url.href} />
+</svelte:head>
+
 <div class="relative min-h-screen bg-[#060913] text-slate-100 flex flex-col font-sans antialiased overflow-x-hidden">
   
   <!-- Subtle Ambient Glow -->
