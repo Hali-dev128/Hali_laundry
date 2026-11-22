@@ -1,145 +1,111 @@
 <script>
   import { laundryStore } from '$lib/stores/store.svelte.js';
 
-  // Compute live stats from store orders
-  let totalOrdersCount = $derived(laundryStore.orders.length);
-  let readyCount = $derived(laundryStore.orders.filter(o => o.status === 'READY').length);
-  let inProgressCount = $derived(laundryStore.orders.filter(o => ['WASHING', 'IRONING'].includes(o.status)).length);
-  
+  let totalOrders = $derived(laundryStore.orders.length);
+  let activeOrders = $derived(
+    laundryStore.orders.filter((o) => o.status !== 'COLLECTED').length
+  );
+  let readyOrders = $derived(
+    laundryStore.orders.filter((o) => o.status === 'READY').length
+  );
   let totalRevenue = $derived(
-    laundryStore.orders
-      .filter(o => o.paymentStatus === 'PAID' || o.amountPaid > 0)
-      .reduce((sum, o) => sum + o.amountPaid, 0)
+    laundryStore.orders.reduce((sum, o) => sum + (o.amountPaid || 0), 0)
+  );
+  let pendingBalance = $derived(
+    laundryStore.orders.reduce(
+      (sum, o) => sum + Math.max(0, (o.totalAmount || 0) - (o.amountPaid || 0)),
+      0
+    )
   );
 
-  // Format currency in Naira
-  const formatNaira = (amount) => `₦${amount.toLocaleString()}`;
+  const formatNaira = (amt) => `₦${(amt || 0).toLocaleString()}`;
 </script>
 
-<div class="space-y-8 pb-12">
+<div class="space-y-6 pb-12">
   
   <!-- Top Welcome Banner -->
-  <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-linear-to-r from-slate-900/80 via-slate-900/50 to-indigo-950/30 p-6 rounded-3xl border border-white/10 backdrop-blur-xl shadow-2xl">
+  <div class="glass-card p-5 sm:p-6 rounded-3xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
     <div>
-      <h1 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Shop Operations Dashboard</h1>
-      <p class="text-sm text-slate-400 mt-1">Monitor daily garment flow, track ready pickups, and review revenue effortlessly.</p>
+      <h1 class="text-xl sm:text-2xl font-extrabold text-white">Shop Overview</h1>
+      <p class="text-xs sm:text-sm text-slate-300 mt-1">
+        Live garment tracking & revenue summary for <span class="text-sky-300 font-semibold">{laundryStore.storeName}</span>.
+      </p>
     </div>
-    <div class="flex items-center gap-3">
-      <a href="/orders/new" class="px-5 py-2.5 rounded-xl bg-linear-to-r from-sky-500 to-indigo-600 text-white font-semibold text-sm shadow-lg shadow-sky-500/25 hover:shadow-sky-500/40 transition transform active:scale-95 flex items-center space-x-2">
-        <span>+ New Drop-off Order</span>
+
+    <a
+      href="/orders/new"
+      class="btn-tactile w-full sm:w-auto text-center px-5 py-3 rounded-2xl bg-linear-to-r from-sky-500 to-indigo-600 text-white font-extrabold text-xs sm:text-sm shadow-lg shadow-sky-500/25"
+    >
+      + New Drop-off Order
+    </a>
+  </div>
+
+  <!-- 2x2 Mobile / 4-Column Desktop KPI Cards -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+    <div class="glass-card p-4 sm:p-5 rounded-2xl border-l-4 border-l-sky-400">
+      <p class="text-[11px] font-bold uppercase tracking-wider text-slate-300">Active Orders</p>
+      <p class="text-2xl sm:text-3xl font-extrabold text-white mt-1.5">{activeOrders}</p>
+      <p class="text-[11px] text-slate-400 mt-1">{totalOrders} total logged</p>
+    </div>
+
+    <div class="glass-card p-4 sm:p-5 rounded-2xl border-l-4 border-l-emerald-400">
+      <p class="text-[11px] font-bold uppercase tracking-wider text-slate-300">Ready for Pickup</p>
+      <p class="text-2xl sm:text-3xl font-extrabold text-emerald-300 mt-1.5">{readyOrders}</p>
+      <p class="text-[11px] text-slate-400 mt-1">Awaiting customer</p>
+    </div>
+
+    <div class="glass-card p-4 sm:p-5 rounded-2xl border-l-4 border-l-indigo-400">
+      <p class="text-[11px] font-bold uppercase tracking-wider text-slate-300">Cash Collected</p>
+      <p class="text-xl sm:text-2xl font-extrabold text-white mt-1.5 truncate">{formatNaira(totalRevenue)}</p>
+      <p class="text-[11px] text-emerald-300 mt-1">Paid deposits & balances</p>
+    </div>
+
+    <div class="glass-card p-4 sm:p-5 rounded-2xl border-l-4 border-l-rose-400">
+      <p class="text-[11px] font-bold uppercase tracking-wider text-slate-300">Unpaid Balance</p>
+      <p class="text-xl sm:text-2xl font-extrabold text-rose-300 mt-1.5 truncate">{formatNaira(pendingBalance)}</p>
+      <p class="text-[11px] text-slate-400 mt-1">Due before release</p>
+    </div>
+  </div>
+
+  <!-- Recent Orders Panel -->
+  <div class="glass-card p-4 sm:p-6 rounded-3xl space-y-4">
+    <div class="flex items-center justify-between">
+      <h2 class="text-base sm:text-lg font-extrabold text-white">Recent Orders</h2>
+      <a href="/orders" class="text-xs font-bold text-sky-300 hover:text-sky-200">
+        View All Orders &rarr;
       </a>
-    </div>
-  </div>
-
-  <!-- Stats Grid (Glass Cards) -->
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-    
-    <!-- Stat 1 -->
-    <div class="bg-slate-900/60 glass-card backdrop-blur-xl border border-white/10 p-5 rounded-2xl shadow-xl flex items-center justify-between">
-      <div>
-        <p class="text-xs font-medium uppercase tracking-wider text-slate-400">Total Orders</p>
-        <p class="text-3xl font-bold text-white mt-1">{totalOrdersCount}</p>
-        <span class="text-xs text-emerald-400 font-medium mt-1 inline-block">Active system queue</span>
-      </div>
-      <div class="w-12 h-12 rounded-2xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-xl">
-        📦
-      </div>
-    </div>
-
-    <!-- Stat 2 -->
-    <div class="bg-slate-900/60 glass-card backdrop-blur-xl border border-white/10 p-5 rounded-2xl shadow-xl flex items-center justify-between">
-      <div>
-        <p class="text-xs font-medium uppercase tracking-wider text-slate-400">In Progress</p>
-        <p class="text-3xl font-bold text-sky-400 mt-1">{inProgressCount}</p>
-        <span class="text-xs text-sky-300 font-medium mt-1 inline-block">Washing & Ironing</span>
-      </div>
-      <div class="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-xl">
-        🌊
-      </div>
-    </div>
-
-    <!-- Stat 3 -->
-    <div class="bg-slate-900/60 glass-card backdrop-blur-xl border border-white/10 p-5 rounded-2xl shadow-xl flex items-center justify-between">
-      <div>
-        <p class="text-xs font-medium uppercase tracking-wider text-slate-400">Ready for Pickup</p>
-        <p class="text-3xl font-bold text-emerald-400 mt-1">{readyCount}</p>
-        <span class="text-xs text-emerald-300 font-medium mt-1 inline-block">Awaiting customer</span>
-      </div>
-      <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-xl">
-        ✨
-      </div>
-    </div>
-
-    <!-- Stat 4 -->
-    <div class="bg-slate-900/60 glass-card backdrop-blur-xl border border-white/10 p-5 rounded-2xl shadow-xl flex items-center justify-between">
-      <div>
-        <p class="text-xs font-medium uppercase tracking-wider text-slate-400">Cash Collected</p>
-        <p class="text-3xl font-bold text-amber-400 mt-1">{formatNaira(totalRevenue)}</p>
-        <span class="text-xs text-amber-300/80 font-medium mt-1 inline-block">Deposits & Balances</span>
-      </div>
-      <div class="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-xl">
-        💵
-      </div>
-    </div>
-
-  </div>
-
-  <!-- Recent Orders Section -->
-  <div class="bg-slate-900/60 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl">
-    <div class="flex items-center justify-between mb-6">
-      <h2 class="text-lg font-bold text-white">Recent Drop-offs</h2>
-      <a href="/orders" class="text-xs font-semibold text-sky-400 hover:text-sky-300 transition">View All Orders &rarr;</a>
     </div>
 
     {#if laundryStore.orders.length === 0}
-      <div class="text-center py-12 text-slate-500">
-        <p class="text-4xl mb-2">📭</p>
-        <p class="text-sm">No orders recorded yet. Click "+ New Drop-off Order" to begin.</p>
+      <div class="glass-well rounded-2xl p-8 text-center text-slate-300 text-sm">
+        No orders recorded yet. Tap <strong>+ New Drop-off Order</strong> to log your first customer.
       </div>
     {:else}
-      <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse">
-          <thead>
-            <tr class="border-b border-white/10 text-xs font-semibold text-slate-400 uppercase tracking-wider">
-              <th class="py-3 px-4">Order ID</th>
-              <th class="py-3 px-4">Customer</th>
-              <th class="py-3 px-4">Items Count</th>
-              <th class="py-3 px-4">Status</th>
-              <th class="py-3 px-4">Payment</th>
-              <th class="py-3 px-4 text-right">Total</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-white/5 text-sm">
-            {#each laundryStore.orders.slice(0, 5) as ord}
-              <tr class="hover:bg-white/5 transition">
-                <td class="py-3.5 px-4 font-mono font-bold text-sky-400">{ord.orderCode}</td>
-                <td class="py-3.5 px-4 font-medium text-white">{ord.customerName} <span class="text-xs text-slate-500 block">{ord.customerPhone}</span></td>
-                <td class="py-3.5 px-4 text-slate-300">{ord.items.reduce((acc, i) => acc + i.qty, 0)} items</td>
-                <td class="py-3.5 px-4">
-                  <span class="px-2.5 py-1 rounded-full text-xs font-semibold 
-                    {ord.status === 'RECEIVED' ? 'bg-slate-800 text-slate-300 border border-slate-700' : ''}
-                    {ord.status === 'WASHING' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : ''}
-                    {ord.status === 'IRONING' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30' : ''}
-                    {ord.status === 'READY' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : ''}
-                    {ord.status === 'COLLECTED' ? 'bg-slate-700/50 text-slate-400 border border-slate-600' : ''}
-                  ">
-                    {ord.status}
-                  </span>
-                </td>
-                <td class="py-3.5 px-4">
-                  <span class="px-2.5 py-1 rounded-full text-xs font-bold 
-                    {ord.paymentStatus === 'PAID' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : ''}
-                    {ord.paymentStatus === 'PART_PAID' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : ''}
-                    {ord.paymentStatus === 'UNPAID' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' : ''}
-                  ">
-                    {ord.paymentStatus.replace('_', ' ')}
-                  </span>
-                </td>
-                <td class="py-3.5 px-4 text-right font-semibold text-white">{formatNaira(ord.totalAmount)}</td>
-              </tr>
-            {/each}
-          </tbody>
-        </table>
+      <div class="space-y-2.5">
+        {#each laundryStore.orders.slice(0, 5) as ord}
+          <div class="glass-well p-3.5 sm:p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+            <div class="min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-mono font-extrabold text-sky-300">{ord.orderCode}</span>
+                <span class="text-sm font-bold text-white truncate">{ord.customerName}</span>
+              </div>
+              <p class="text-xs text-slate-300 mt-0.5">
+                {ord.items.reduce((a, b) => a + b.qty, 0)} garments &bull; {ord.createdAt}
+              </p>
+            </div>
+
+            <div class="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-800">
+              <span class="text-sm font-extrabold text-white">{formatNaira(ord.totalAmount)}</span>
+              <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider border
+                {ord.status === 'READY' ? 'bg-emerald-500/20 text-emerald-200 border-emerald-400/50' : ''}
+                {ord.status === 'COLLECTED' ? 'bg-slate-700/60 text-slate-300 border-slate-500/50' : ''}
+                {ord.status !== 'READY' && ord.status !== 'COLLECTED' ? 'bg-sky-500/20 text-sky-200 border-sky-400/50' : ''}
+              ">
+                {ord.status}
+              </span>
+            </div>
+          </div>
+        {/each}
       </div>
     {/if}
   </div>

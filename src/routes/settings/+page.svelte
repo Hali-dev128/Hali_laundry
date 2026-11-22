@@ -1,288 +1,270 @@
 <script>
-  import { slide } from 'svelte/transition';
   import { laundryStore } from '$lib/stores/store.svelte.js';
+  import { slide } from 'svelte/transition';
 
-  // Form State for Adding New Garment Price
-  let newName = $state('');
-  let newCategory = $state('General');
-  let newPrice = $state('');
+  let newItemName = $state('');
+  let newItemCategory = $state('General');
+  let newItemPrice = $state(500);
 
-  // Inline Editing State
+  let multiplierInput = $state(laundryStore.expressMultiplier);
+  let storeIdInput = $state(laundryStore.storeId);
+
   let editingId = $state(null);
   let editPriceValue = $state(0);
 
-  // Shop Configuration State (Escape Hatch for Future Delivery Support)
-  let enableDeliveries = $state(false);
-  let expressPercent = $state(Math.round((laundryStore.expressMultiplier - 1) * 100));
+  const categories = ['Traditional', 'General', 'Formal', 'Bedding'];
 
   function handleAddPrice(e) {
     e.preventDefault();
-    if (!newName.trim() || !newPrice || Number(newPrice) <= 0) return;
+    const price = Number(newItemPrice);
+    if (!newItemName.trim() || price <= 0) return;
 
     laundryStore.prices.push({
       id: `p-${Date.now()}`,
-      name: newName.trim(),
-      category: newCategory,
-      price: Number(newPrice)
+      name: newItemName.trim(),
+      category: newItemCategory,
+      price
     });
-
     laundryStore.save();
-    newName = '';
-    newPrice = '';
+
+    newItemName = '';
+    newItemPrice = 500;
   }
 
-  function startEdit(item) {
+  function startEditPrice(item) {
     editingId = item.id;
     editPriceValue = item.price;
   }
 
-  function saveEdit(itemId) {
-    const item = laundryStore.prices.find(p => p.id === itemId);
-    if (item && Number(editPriceValue) > 0) {
-      item.price = Number(editPriceValue);
+  function saveEditPrice(item) {
+    const val = Number(editPriceValue);
+    if (val > 0) {
+      item.price = val;
       laundryStore.save();
     }
     editingId = null;
   }
 
-  function deletePrice(itemId) {
-    laundryStore.prices = laundryStore.prices.filter(p => p.id !== itemId);
+  function deletePrice(id) {
+    laundryStore.prices = laundryStore.prices.filter((p) => p.id !== id);
     laundryStore.save();
   }
 
-  function updateExpressMultiplier() {
-    const pct = Math.max(0, Number(expressPercent));
-    laundryStore.expressMultiplier = 1 + (pct / 100);
-    laundryStore.save();
+  function applyMultiplier() {
+    const val = Number(multiplierInput);
+    if (val >= 1) {
+      laundryStore.expressMultiplier = val;
+      laundryStore.save();
+    }
+  }
+
+  function applyStoreId() {
+    laundryStore.setStoreId(storeIdInput);
+    storeIdInput = laundryStore.storeId;
   }
 
   const formatNaira = (amt) => `₦${(amt || 0).toLocaleString()}`;
 </script>
 
-{#if laundryStore.role !== 'admin'}
-  <!-- Role Guardrail if a Worker tries to visit /settings directly -->
-  <div class="max-w-md mx-auto mt-16 bg-slate-900/60 backdrop-blur-xl border border-rose-500/30 p-8 rounded-3xl text-center space-y-4 shadow-2xl">
-    <div class="w-14 h-14 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center mx-auto text-2xl">
-      🔒
-    </div>
-    <h1 class="text-xl font-extrabold text-white">Admin Access Only</h1>
-    <p class="text-sm text-slate-400">
-      Workers are restricted from modifying garment prices or shop configurations. Switch to Admin view in the top bar to test this page.
-    </p>
-    <a href="/" class="inline-block px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-bold transition">
-      &larr; Return to Dashboard
-    </a>
-  </div>
-{:else}
+<div class="max-w-7xl mx-auto space-y-5 pb-16">
 
- <div class="max-w-5xl mx-auto space-y-8 pb-16">
-    <!-- Multi-Tenancy Store ID Switcher Card -->
-    <div class="bg-slate-900/60 glass-card backdrop-blur-xl border border-white/10 p-6 rounded-3xl shadow-xl space-y-4">
-    <h2 class="text-base font-bold text-white flex items-center gap-2">
-        <span>🏢</span> Store / Tenant Identifier
-    </h2>
-    <div>
-        <label for="storeId" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Current Store ID</label>
-        <div class="flex gap-2">
-        <input 
-            type="text" 
-            id="storeId"
-            bind:value={laundryStore.storeId} 
-            class="flex-1 bg-slate-950/60 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm font-mono focus:outline-none focus:border-amber-500"
-        />
-        <button 
-            type="button"
-            onclick={() => laundryStore.setStoreId(laundryStore.storeId)}
-            class="px-4 py-2.5 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 text-xs font-bold hover:bg-amber-500/30 transition"
-        >
-            Set Store
-        </button>
-        </div>
-        <p class="text-[11px] text-slate-400 mt-1">Changing this isolates data so different shops don't mix records.</p>
+  {#if laundryStore.role !== 'admin'}
+    <div class="glass-card p-8 rounded-3xl text-center space-y-4 max-w-lg mx-auto">
+      <p class="text-3xl">🔒</p>
+      <h1 class="text-xl font-extrabold text-white">Admin Access Required</h1>
+      <p class="text-xs sm:text-sm text-slate-300">
+        Switch to Admin mode in the top bar to manage garment pricing, express multipliers, and store settings.
+      </p>
+      <a
+        href="/dashboard"
+        class="btn-tactile inline-block px-5 py-2.5 rounded-xl bg-sky-500 text-white text-xs font-extrabold"
+      >
+        Return to Dashboard
+      </a>
     </div>
-    </div>
-    
+  {:else}
+
     <!-- Header -->
-    <div class="bg-linear-to-r from-slate-900/80 via-slate-900/50 to-amber-950/20 backdrop-blur-xl border border-white/10 p-6 rounded-3xl shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-      <div>
-        <span class="text-[10px] font-extrabold uppercase tracking-widest text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-full">
-          👑 Admin Control Center
-        </span>
-        <h1 class="text-2xl font-extrabold text-white mt-2">Price List & Shop Settings</h1>
-        <p class="text-sm text-slate-400 mt-1">Manage garment rates, express surcharges, and system rules.</p>
-      </div>
+    <div class="glass-card p-4 sm:p-6 rounded-3xl">
+      <h1 class="text-xl sm:text-2xl font-extrabold text-white">Admin Settings & Price Menu</h1>
+      <p class="text-xs sm:text-sm text-slate-300 mt-1">
+        Configure garment rates, express pricing, and active store isolation.
+      </p>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-      
-      <!-- LEFT COLUMN: Add New Garment & Global Rules (5 Cols) -->
-      <div class="lg:col-span-5 space-y-6">
-        
-        <!-- Add Garment Form -->
-        <form onsubmit={handleAddPrice} class="bg-slate-900/60 glass-card backdrop-blur-xl border border-white/10 p-6 rounded-3xl shadow-xl space-y-4">
-          <h2 class="text-base font-bold text-white flex items-center gap-2">
-            <span>➕</span> Add New Garment Rate
-          </h2>
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+
+      <!-- Left Column: Store & Express Settings (5 cols) -->
+      <div class="lg:col-span-5 space-y-5">
+
+        <!-- Multi-Tenancy Store ID -->
+        <div class="glass-card p-4 sm:p-6 rounded-3xl space-y-3">
+          <h2 class="text-base font-extrabold text-white">🏢 Store / Tenant ID</h2>
+          <p class="text-xs text-slate-300">
+            Isolates orders, customers, and prices per laundry branch.
+          </p>
+          <div class="flex gap-2">
+            <input
+              type="text"
+              bind:value={storeIdInput}
+              class="glass-well flex-1 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-mono text-white focus:outline-none focus:border-amber-400"
+            />
+            <button
+              type="button"
+              onclick={applyStoreId}
+              class="btn-tactile px-4 py-2.5 rounded-xl bg-amber-500 text-slate-950 font-extrabold text-xs shrink-0"
+            >
+              Switch
+            </button>
+          </div>
+        </div>
+
+        <!-- Express Multiplier -->
+        <div class="glass-card p-4 sm:p-6 rounded-3xl space-y-3">
+          <h2 class="text-base font-extrabold text-white">⚡ Express Multiplier</h2>
+          <p class="text-xs text-slate-300">
+            Multiplier applied when an order is marked Express (e.g. `1.5` = +50%).
+          </p>
+          <div class="flex gap-2">
+            <input
+              type="number"
+              step="0.1"
+              min="1"
+              bind:value={multiplierInput}
+              class="glass-well flex-1 rounded-xl px-3.5 py-2.5 text-sm font-bold text-white focus:outline-none focus:border-sky-400"
+            />
+            <button
+              type="button"
+              onclick={applyMultiplier}
+              class="btn-tactile px-4 py-2.5 rounded-xl bg-sky-500 text-white font-extrabold text-xs shrink-0"
+            >
+              Apply
+            </button>
+          </div>
+        </div>
+
+        <!-- Add New Garment Price -->
+        <form onsubmit={handleAddPrice} class="glass-card p-4 sm:p-6 rounded-3xl space-y-3.5">
+          <h2 class="text-base font-extrabold text-white">+ Add Garment Price</h2>
 
           <div>
-            <label for="garmentName" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Garment Name *</label>
-            <input 
-              type="text" 
-              id="garmentName"
-              bind:value={newName} 
-              placeholder="e.g. White Kaftan, Curtains..." 
-              required
-              class="w-full bg-slate-950/60 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-amber-500 transition"
+            <label for="newItemName" class="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1">
+              Garment Name
+            </label>
+            <input
+              type="text"
+              id="newItemName"
+              bind:value={newItemName}
+              placeholder="e.g. Babanriga"
+              class="glass-well w-full rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-sky-400"
             />
           </div>
 
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label for="garmentCategory" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Category</label>
-              <select 
-                id="garmentCategory"
-                bind:value={newCategory}
-                class="w-full bg-slate-950/60 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-amber-500 transition"
+              <label for="newItemCategory" class="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1">
+                Category
+              </label>
+              <select
+                id="newItemCategory"
+                bind:value={newItemCategory}
+                class="glass-well w-full rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-sky-400"
               >
-                <option value="General">General</option>
-                <option value="Traditional">Traditional</option>
-                <option value="Formal">Formal</option>
-                <option value="Bedding">Bedding</option>
+                {#each categories as cat}
+                  <option value={cat} class="bg-slate-900">{cat}</option>
+                {/each}
               </select>
             </div>
 
             <div>
-              <label for="newPrice" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Price (₦) *</label>
-              <input 
-                type="number" 
-                id="newPrice"
-                bind:value={newPrice} 
+              <label for="newItemPrice" class="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1">
+                Price (₦)
+              </label>
+              <input
+                type="number"
                 min="50"
                 step="50"
-                placeholder="1000" 
-                required
-                class="w-full bg-slate-950/60 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-amber-500 transition font-bold"
+                id="newItemPrice"
+                bind:value={newItemPrice}
+                class="glass-well w-full rounded-xl px-3.5 py-2.5 text-sm text-white font-bold focus:outline-none focus:border-sky-400"
               />
             </div>
           </div>
 
-          <button 
+          <button
             type="submit"
-            class="w-full py-3 rounded-2xl bg-linear-to-r from-amber-500 to-orange-600 text-slate-950 font-extrabold text-xs shadow-lg shadow-amber-500/20 hover:shadow-amber-500/35 transition transform active:scale-95"
+            class="btn-tactile w-full py-3 rounded-2xl bg-linear-to-r from-sky-500 to-indigo-600 text-white font-extrabold text-xs sm:text-sm"
           >
-            Save Item to Price Menu
+            Save to Price Menu
           </button>
         </form>
 
-        <!-- Shop Rules & Escape Hatch Card -->
-        <div transition:slide={{ duration: 160 }} class="bg-slate-900/60 glass-card backdrop-blur-xl border border-white/10 p-6 rounded-3xl shadow-xl space-y-5">
-          <h2 class="text-base font-bold text-white flex items-center gap-2">
-            <span>⚙️</span> Operations Configuration
-          </h2>
-
-          <!-- Express Surcharge Percentage -->
-          <div class="space-y-2">
-            <label for="expressPercent" class="block text-xs font-semibold uppercase tracking-wider text-slate-400">Express Surcharge (%)</label>
-            <div class="flex items-center gap-2">
-              <input 
-                type="number" 
-                id="expressPercent"
-                bind:value={expressPercent}
-                min="0"
-                max="200"
-                class="w-28 bg-slate-950/60 border border-white/10 rounded-xl px-3 py-2 text-white text-sm font-bold focus:outline-none focus:border-amber-500"
-              />
-              <button 
-                type="button"
-                onclick={updateExpressMultiplier}
-                class="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-bold transition"
-              >
-                Apply ({expressPercent}%)
-              </button>
-            </div>
-            <p class="text-[11px] text-slate-400">Current multiplier: <span class="text-amber-400 font-bold">{laundryStore.expressMultiplier}x</span></p>
-          </div>
-
-          <!-- Future Escape Hatch Toggle -->
-          <div class="pt-4 border-t border-white/10 flex items-center justify-between">
-            <div>
-              <p class="text-xs font-bold text-white">Enable Delivery Dispatch</p>
-              <p class="text-[10px] text-slate-400">Currently Walk-in Pickup Only (v1)</p>
-            </div>
-            <input 
-              type="checkbox" 
-              bind:checked={enableDeliveries}
-              class="w-5 h-5 rounded accent-amber-500 cursor-pointer"
-            />
-          </div>
-          {#if enableDeliveries}
-            <p class="text-[11px] text-amber-400 bg-amber-500/10 border border-amber-500/20 p-2.5 rounded-xl">
-              Delivery module flag enabled! Ready to unlock dispatch fields when building the backend.
-            </p>
-          {/if}
-        </div>
-
       </div>
 
-      <!-- RIGHT COLUMN: Current Active Price List (7 Cols) -->
-      <div class="lg:col-span-7">
-        <div class="bg-slate-900/60 backdrop-blur-xl border border-white/10 p-6 rounded-3xl shadow-xl space-y-4">
-          <div class="flex items-center justify-between">
-            <h2 class="text-base font-bold text-white">Active Garment Price Menu</h2>
-            <span class="text-xs text-slate-400">{laundryStore.prices.length} items listed</span>
-          </div>
+      <!-- Right Column: Current Price List (7 cols) -->
+      <div class="lg:col-span-7 glass-card p-4 sm:p-6 rounded-3xl space-y-3">
+        <h2 class="text-base font-extrabold text-white">Current Price List ({laundryStore.prices.length})</h2>
 
-          <div class="divide-y divide-white/5">
-            {#each laundryStore.prices as item}
-              <div class="py-3.5 flex items-center justify-between gap-4">
-                <div>
-                  <p class="text-sm font-bold text-white">{item.name}</p>
-                  <span class="text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-slate-400 border border-white/5">
-                    {item.category}
-                  </span>
+        <div class="space-y-2.5">
+          {#each laundryStore.prices as item}
+            <div class="glass-well p-3.5 rounded-2xl space-y-2.5">
+              <div class="flex items-center justify-between gap-2">
+                <div class="min-w-0">
+                  <p class="text-sm font-extrabold text-white truncate">{item.name}</p>
+                  <span class="text-[11px] text-slate-400">{item.category}</span>
                 </div>
 
-                <div class="flex items-center transition:slide={{ duration: 160 }} gap-2">
-                  {#if editingId === item.id}
-                    <input 
-                      type="number" 
-                      bind:value={editPriceValue}
-                      class="w-24 bg-slate-950 border border-amber-500 rounded-xl px-2.5 py-1 text-white text-xs font-bold"
-                    />
-                    <button 
-                      onclick={() => saveEdit(item.id)}
-                      class="px-3 py-1 rounded-xl bg-emerald-600 text-white text-xs font-bold"
-                    >
-                      Save
-                    </button>
-                    <button 
-                      onclick={() => editingId = null}
-                      class="px-2 py-1 rounded-xl bg-slate-800 text-slate-400 text-xs"
-                    >
-                      &times;
-                    </button>
-                  {:else}
-                    <span class="text-sm font-extrabold text-emerald-400 mr-2">{formatNaira(item.price)}</span>
-                    <button 
-                      onclick={() => startEdit(item)}
-                      class="px-2.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-semibold transition"
-                    >
-                      Edit
-                    </button>
-                    <button 
-                      onclick={() => deletePrice(item.id)}
-                      class="px-2.5 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs font-semibold transition"
-                    >
-                      Delete
-                    </button>
-                  {/if}
+                <div class="flex items-center gap-2 shrink-0">
+                  <span class="text-sm font-extrabold text-emerald-300">{formatNaira(item.price)}</span>
+                  <button
+                    type="button"
+                    onclick={() => startEditPrice(item)}
+                    class="btn-tactile px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    onclick={() => deletePrice(item.id)}
+                    class="btn-tactile px-2.5 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 text-xs font-bold"
+                  >
+                    Delete
+                  </button>
                 </div>
               </div>
-            {/each}
-          </div>
+
+              {#if editingId === item.id}
+                <div transition:slide={{ duration: 150 }} class="flex items-center gap-2 pt-2 border-t border-slate-800">
+                  <input
+                    type="number"
+                    min="50"
+                    step="50"
+                    bind:value={editPriceValue}
+                    class="flex-1 bg-slate-900 border border-slate-600 rounded-xl px-3 py-2 text-xs sm:text-sm font-bold text-white"
+                  />
+                  <button
+                    type="button"
+                    onclick={() => saveEditPrice(item)}
+                    class="btn-tactile px-4 py-2 rounded-xl bg-emerald-500 text-slate-950 font-extrabold text-xs"
+                  >
+                    Save
+                  </button>
+                  <button
+                    type="button"
+                    onclick={() => editingId = null}
+                    class="btn-tactile px-3 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              {/if}
+            </div>
+          {/each}
         </div>
       </div>
 
     </div>
-  </div>
-{/if}
+
+  {/if}
+
+</div>

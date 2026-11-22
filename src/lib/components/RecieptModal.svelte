@@ -1,29 +1,56 @@
 <script>
   import { fade, scale } from 'svelte/transition';
   import { cubicOut } from 'svelte/easing';
+  import { laundryStore } from '$lib/stores/store.svelte.js';
 
   let { order = null, isOpen = false, onClose = () => {} } = $props();
 
   const formatNaira = (amt) => `₦${(amt || 0).toLocaleString()}`;
 
+  let balance = $derived(
+    order ? Math.max(0, (order.totalAmount || 0) - (order.amountPaid || 0)) : 0
+  );
+
   function shareOnWhatsApp() {
     if (!order) return;
-    const itemsList = order.items.map(i => `- ${i.qty}x ${i.name} (${formatNaira(i.unitPrice * i.qty)})`).join('\n');
-    const message = `🧺 *Hali Laundry Receipt*\n` +
-      `Order Code: *${order.orderCode}*\n` +
-      `Customer: ${order.customerName}\n\n` +
-      `*Items:*\n${itemsList}\n\n` +
-      `Total: *${formatNaira(order.totalAmount)}*\n` +
-      `Paid: ${formatNaira(order.amountPaid)}\n` +
-      `Balance Due: *${formatNaira(order.totalAmount - order.amountPaid)}*\n` +
-      `Status: ${order.paymentStatus}\n\n` +
-      `Thank you for choosing Hali Laundry! ✨`;
 
-    const encoded = encodeURIComponent(message);
-    window.open(`https://wa.me/${order.customerPhone}?text=${encoded}`, '_blank');
+    const itemsText = order.items
+      .map(
+        (i) =>
+          `• ${i.qty}x ${i.name} (${formatNaira(i.unitPrice * i.qty)})${
+            i.note ? ` — _${i.note}_` : ''
+          }`
+      )
+      .join('\n');
+
+    const message = [
+      `*${laundryStore.storeName} — Order Receipt*`,
+      `Order ID: *${order.orderCode}*`,
+      `Customer: ${order.customerName} (${order.customerPhone})`,
+      `Status: *${order.status}*${order.isExpress ? ' ⚡ EXPRESS' : ''}`,
+      ``,
+      `*Items:*`,
+      itemsText,
+      ``,
+      `Total: *${formatNaira(order.totalAmount)}*`,
+      `Paid: ${formatNaira(order.amountPaid)}`,
+      `Balance Due: *${formatNaira(balance)}*`,
+      `Date: ${order.createdAt}`
+    ].join('\n');
+
+    const cleanPhone = (order.customerPhone || '').replace(/\D/g, '');
+    const normalizedPhone = cleanPhone.startsWith('0')
+      ? `234${cleanPhone.slice(1)}`
+      : cleanPhone;
+
+    const url = normalizedPhone
+      ? `https://wa.me/${normalizedPhone}?text=${encodeURIComponent(message)}`
+      : `https://wa.me/?text=${encodeURIComponent(message)}`;
+
+    window.open(url, '_blank', 'noopener,noreferrer');
   }
 
-  function handlePrint() {
+  function printReceipt() {
     window.print();
   }
 </script>
@@ -31,109 +58,123 @@
 {#if isOpen && order}
   <div
     transition:fade={{ duration: 160 }}
-    class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4"
+    class="fixed inset-0 z-50 bg-[#060913]/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Order Receipt"
   >
     <div
       in:scale={{ duration: 220, start: 0.94, opacity: 0, easing: cubicOut }}
       out:fade={{ duration: 140 }}
-      class="bg-slate-900/95 backdrop-blur-2xl border border-white/15 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-6 text-slate-100 relative"
+      class="glass-card w-full max-w-md rounded-3xl p-5 sm:p-6 space-y-5 text-slate-100 relative my-auto"
     >
-      
-      <!-- Close button -->
-      <button 
-        onclick={onClose}
-        class="absolute top-4 right-4 text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-full w-8 h-8 flex items-center justify-center transition"
-      >
-        &times;
-      </button>
-
-      <!-- Receipt Header -->
-      <div class="text-center space-y-1">
-        <div class="w-12 h-12 rounded-2xl bg-linear-to-tr from-sky-500 to-indigo-600 flex items-center justify-center mx-auto text-xl shadow-lg shadow-sky-500/20">
-          🧺
+      <!-- Top Header -->
+      <div class="flex items-start justify-between gap-3 border-b border-slate-800 pb-4">
+        <div>
+          <span class="text-[11px] font-mono font-extrabold uppercase tracking-wider text-sky-300">
+            Digital Receipt
+          </span>
+          <h2 class="text-lg sm:text-xl font-extrabold text-white mt-0.5">
+            {order.orderCode}
+          </h2>
+          <p class="text-xs text-slate-300 mt-0.5">
+            {laundryStore.storeName} &bull; {order.createdAt}
+          </p>
         </div>
-        <h2 class="text-xl font-extrabold tracking-tight text-white">Hali Laundry Services</h2>
-        <p class="text-xs text-slate-400">Digital Order Receipt & Tag</p>
+
+        <button
+          type="button"
+          onclick={onClose}
+          class="btn-tactile w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center justify-center text-base font-bold shrink-0"
+          aria-label="Close receipt"
+        >
+          &times;
+        </button>
       </div>
 
-      <!-- Order Meta -->
-      <div class="bg-slate-950/60 p-4 rounded-2xl border border-white/10 space-y-2 text-xs">
-        <div class="flex justify-between">
-          <span class="text-slate-400">Order Code:</span>
-          <span class="font-bold text-sky-400">{order.orderCode}</span>
+      <!-- Customer & Status Well -->
+      <div class="glass-well p-3.5 rounded-2xl flex items-center justify-between gap-2 text-xs">
+        <div class="min-w-0">
+          <p class="font-extrabold text-white text-sm truncate">{order.customerName}</p>
+          <p class="text-slate-300 font-mono mt-0.5">{order.customerPhone}</p>
         </div>
-        <div class="flex justify-between">
-          <span class="text-slate-400">Customer Name:</span>
-          <span class="font-medium text-white">{order.customerName}</span>
-        </div>
-        <div class="flex justify-between">
-          <span class="text-slate-400">Phone:</span>
-          <span class="font-medium text-white">{order.customerPhone}</span>
-        </div>
-        <div class="flex justify-between">
-          <span class="text-slate-400">Date:</span>
-          <span class="font-medium text-white">{order.createdAt}</span>
+
+        <div class="flex flex-col items-end gap-1 shrink-0">
+          <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-sky-500/20 text-sky-200 border border-sky-400/50">
+            {order.status}
+          </span>
+          {#if order.isExpress}
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/20 text-amber-200 border border-amber-400/50">
+              ⚡ Express
+            </span>
+          {/if}
         </div>
       </div>
 
-      <!-- Itemized List -->
-      <div class="space-y-2">
-        <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Itemized Garments</p>
-        <div class="max-h-48 overflow-y-auto space-y-2 pr-1">
+      <!-- Garments Breakdown Well -->
+      <div class="glass-well p-3.5 rounded-2xl space-y-2.5 text-xs">
+        <div class="flex justify-between font-bold text-slate-300 border-b border-slate-800 pb-1.5">
+          <span>Garment Breakdown</span>
+          <span>Amount</span>
+        </div>
+
+        <div class="max-h-44 overflow-y-auto space-y-2 pr-1">
           {#each order.items as item}
-            <div class="flex items-center justify-between p-2.5 rounded-xl bg-white/5 border border-white/5 text-xs">
-              <div>
-                <p class="font-bold text-white">{item.qty}x {item.name}</p>
-                {#if item.note}
-                  <p class="text-[10px] text-amber-400/90 mt-0.5">Note: {item.note}</p>
-                {/if}
+            <div class="space-y-0.5">
+              <div class="flex justify-between items-baseline gap-2">
+                <span class="font-semibold text-white">
+                  {item.qty}x {item.name}
+                </span>
+                <span class="font-bold text-slate-200 shrink-0">
+                  {formatNaira(item.unitPrice * item.qty)}
+                </span>
               </div>
-              <span class="font-bold text-emerald-400">{formatNaira(item.unitPrice * item.qty)}</span>
+              {#if item.note}
+                <p class="text-[11px] text-amber-300 pl-3">
+                  Note: {item.note}
+                </p>
+              {/if}
             </div>
           {/each}
         </div>
       </div>
 
-      <!-- Financial Breakdown -->
-      <div class="bg-slate-950/60 p-4 rounded-2xl border border-white/10 space-y-2 text-xs">
-        {#if order.isExpress}
-          <div class="flex justify-between text-amber-400">
-            <span>Express Surcharge Applied</span>
-            <span>Included</span>
-          </div>
-        {/if}
-        <div class="flex justify-between text-slate-300 font-bold">
-          <span>Total Amount:</span>
-          <span>{formatNaira(order.totalAmount)}</span>
+      <!-- Payment Summary Well -->
+      <div class="glass-well p-4 rounded-2xl space-y-2 text-xs sm:text-sm">
+        <div class="flex justify-between text-slate-300">
+          <span>Total Order</span>
+          <span class="font-extrabold text-white">{formatNaira(order.totalAmount)}</span>
         </div>
-        <div class="flex justify-between text-emerald-400">
-          <span>Amount Paid (Deposit):</span>
-          <span>{formatNaira(order.amountPaid)}</span>
+        <div class="flex justify-between text-slate-300">
+          <span>Amount Paid</span>
+          <span class="font-extrabold text-emerald-300">{formatNaira(order.amountPaid)}</span>
         </div>
-        <div class="flex justify-between text-white font-extrabold pt-2 border-t border-white/10 text-sm">
-          <span>Balance Due:</span>
-          <span class="{order.totalAmount - order.amountPaid > 0 ? 'text-rose-400' : 'text-emerald-400'}">
-            {formatNaira(order.totalAmount - order.amountPaid)}
+        <div class="flex justify-between items-center pt-2 border-t border-slate-800">
+          <span class="font-bold text-slate-200">Balance Due</span>
+          <span class="text-base font-extrabold {balance > 0 ? 'text-rose-300' : 'text-emerald-300'}">
+            {formatNaira(balance)}
           </span>
         </div>
       </div>
 
-      <!-- Actions -->
-      <div class="grid grid-cols-2 gap-3 pt-2">
-        <button 
+      <!-- Action Buttons -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+        <button
+          type="button"
           onclick={shareOnWhatsApp}
-          class="py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg shadow-emerald-600/25 transition flex items-center justify-center space-x-1.5"
+          class="btn-tactile py-3 px-4 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs sm:text-sm shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-1.5"
         >
-          <span>💬 Send WhatsApp</span>
+          <span>📲 WhatsApp Receipt</span>
         </button>
-        <button 
-          onclick={handlePrint}
-          class="py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs transition flex items-center justify-center space-x-1.5"
+
+        <button
+          type="button"
+          onclick={printReceipt}
+          class="btn-tactile py-3 px-4 rounded-2xl bg-slate-800 hover:bg-slate-700 text-white border border-slate-600 font-extrabold text-xs sm:text-sm flex items-center justify-center gap-1.5"
         >
-          <span>🖨️ Print / Save</span>
+          <span>🖨️ Print / Save PDF</span>
         </button>
       </div>
-
     </div>
   </div>
 {/if}
