@@ -11,7 +11,6 @@
 		"lint": "prettier --check .",
 		"format": "prettier --write .",
 		"serve-json": "set PORT=4000 && json-server --watch data2.json",
-		"install": "npm install --legacy-peer-deps"
 	},
 	"devDependencies": {
 		"@svelte-put/qr": "^2.1.3",
