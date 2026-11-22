@@ -49,7 +49,7 @@
 
       <!-- Receipt Header -->
       <div class="text-center space-y-1">
-        <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center mx-auto text-xl shadow-lg shadow-sky-500/20">
+        <div class="w-12 h-12 rounded-2xl bg-linear-to-tr from-sky-500 to-indigo-600 flex items-center justify-center mx-auto text-xl shadow-lg shadow-sky-500/20">
           🧺
         </div>
         <h2 class="text-xl font-extrabold tracking-tight text-white">Hali Laundry Services</h2>

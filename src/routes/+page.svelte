@@ -95,11 +95,12 @@
     {#if mode === 'login'}
       <form onsubmit={handleLogin} class="space-y-4">
         <div>
-          <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+          <label for="loginStoreId" class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
             Store ID
           </label>
           <input
             type="text"
+            id="loginStoreId"
             bind:value={loginStoreId}
             placeholder="e.g. hali_laundry_01"
             required
@@ -108,7 +109,7 @@
         </div>
 
         <div>
-          <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+          <label for="accessRole" class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
             Access Role
           </label>
           <div class="grid grid-cols-2 gap-2.5">
@@ -130,11 +131,12 @@
         </div>
 
         <div>
-          <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+          <label for="loginPassword" class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
             PIN / Password
           </label>
           <input
             type="password"
+            id="loginPassword"
             bind:value={loginPassword}
             placeholder="Any PIN works in demo mode"
             class="w-full bg-slate-950/70 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-sky-500 transition"
@@ -151,11 +153,12 @@
     {:else}
       <form onsubmit={handleSignup} class="space-y-4">
         <div>
-          <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+          <label for="signupStoreName" class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
             Laundry Business Name *
           </label>
           <input
             type="text"
+            id="signupStoreName"
             bind:value={storeName}
             placeholder="e.g. CleanWave Express"
             required
@@ -164,11 +167,12 @@
         </div>
 
         <div>
-          <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+          <label for="contactInfo" class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
             Owner Phone or Email *
           </label>
           <input
             type="text"
+            id="contactInfo"
             bind:value={contactInfo}
             placeholder="e.g. 08012345678 or owner@shop.com"
             required
@@ -177,11 +181,12 @@
         </div>
 
         <div>
-          <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+          <label for="signupPassword" class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
             Create Password
           </label>
           <input
             type="password"
+            id="signupPassword"
             bind:value={signupPassword}
             placeholder="Create a strong password"
             class="w-full bg-slate-950/70 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition"

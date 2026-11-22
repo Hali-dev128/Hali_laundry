@@ -82,10 +82,11 @@
         <span>🏢</span> Store / Tenant Identifier
     </h2>
     <div>
-        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Current Store ID</label>
+        <label for="storeId" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Current Store ID</label>
         <div class="flex gap-2">
         <input 
             type="text" 
+            id="storeId"
             bind:value={laundryStore.storeId} 
             class="flex-1 bg-slate-950/60 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm font-mono focus:outline-none focus:border-amber-500"
         />
@@ -124,9 +125,10 @@
           </h2>
 
           <div>
-            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Garment Name *</label>
+            <label for="garmentName" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Garment Name *</label>
             <input 
               type="text" 
+              id="garmentName"
               bind:value={newName} 
               placeholder="e.g. White Kaftan, Curtains..." 
               required
@@ -136,8 +138,9 @@
 
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Category</label>
+              <label for="garmentCategory" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Category</label>
               <select 
+                id="garmentCategory"
                 bind:value={newCategory}
                 class="w-full bg-slate-950/60 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-amber-500 transition"
               >
@@ -149,9 +152,10 @@
             </div>
 
             <div>
-              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Price (₦) *</label>
+              <label for="newPrice" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Price (₦) *</label>
               <input 
                 type="number" 
+                id="newPrice"
                 bind:value={newPrice} 
                 min="50"
                 step="50"
@@ -178,10 +182,11 @@
 
           <!-- Express Surcharge Percentage -->
           <div class="space-y-2">
-            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400">Express Surcharge (%)</label>
+            <label for="expressPercent" class="block text-xs font-semibold uppercase tracking-wider text-slate-400">Express Surcharge (%)</label>
             <div class="flex items-center gap-2">
               <input 
                 type="number" 
+                id="expressPercent"
                 bind:value={expressPercent}
                 min="0"
                 max="200"

@@ -117,9 +117,10 @@
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Phone Number *</label>
+            <label for="customerPhone" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Phone Number *</label>
             <input 
               type="text" 
+              id="customerPhone"
               bind:value={customerPhone} 
               oninput={handlePhoneInput}
               placeholder="e.g. 08031234567" 
@@ -128,9 +129,10 @@
             />
           </div>
           <div>
-            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Customer Name *</label>
+            <label for="customerName" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Customer Name *</label>
             <input 
               type="text" 
+              id="customerName"
               bind:value={customerName} 
               placeholder="e.g. Mr. Adebayo" 
               required
@@ -242,9 +244,10 @@
 
         <!-- Deposit / Payment Input -->
         <div class="space-y-2">
-          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400">Amount Paid Now (Deposit)</label>
+          <label for="amountPaid" class="block text-xs font-semibold uppercase tracking-wider text-slate-400">Amount Paid Now (Deposit)</label>
           <input 
             type="number" 
+            id="amountPaid"
             bind:value={amountPaid} 
             max={totalAmount}
             min="0"
