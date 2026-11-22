@@ -10,7 +10,7 @@
 		"prepare": "svelte-kit sync || echo ''",
 		"lint": "prettier --check .",
 		"format": "prettier --write .",
-		"serve-json": "set PORT=4000 && json-server --watch data2.json",
+		"serve-json": "set PORT=4000 && json-server --watch data2.json"
 	},
 	"devDependencies": {
 		"@svelte-put/qr": "^2.1.3",
